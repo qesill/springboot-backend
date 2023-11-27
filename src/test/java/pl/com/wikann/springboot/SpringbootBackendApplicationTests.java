@@ -22,9 +22,9 @@ class MathExpressionCalculatorTest {
 		assertEquals(11.0f, MathExpressionCalculator.calculateResult("5+3*2"), 0.0001f);
 
 		// Test dla równania z nawiasami
-//		assertEquals(20.0f, MathExpressionCalculator.calculateResult("(5+3)*2"), 0.0001f);
+		assertEquals(16.0f, MathExpressionCalculator.calculateResult("(5+3)*2"), 0.0001f);
 
 		// Test dla równania liczbami ujemnymi
-//		assertEquals(4.0f, MathExpressionCalculator.calculateResult("2--2"), 0.0001f);
+		assertEquals(4.0f, MathExpressionCalculator.calculateResult("2--2"), 0.0001f);
 	}
 }

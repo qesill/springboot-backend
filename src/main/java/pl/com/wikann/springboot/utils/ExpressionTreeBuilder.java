@@ -3,68 +3,115 @@ import java.util.Stack;
 
 public class ExpressionTreeBuilder {
 
-    public ExpressionNode buildTree(String expression) {
-        Stack<ExpressionNode> nodeStack = new Stack<>();
-        Stack<OperatorNode> operatorStack = new Stack<>();
+    static class TreeNode {
+        int weight;
+        String str;
+        TreeNode left, right;
 
-        for (int i = 0; i < expression.length(); i++) {
-            char c = expression.charAt(i);
-
-            if (Character.isDigit(c) || c == '-') {
-                StringBuilder num = new StringBuilder();
-                while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.' || c == '-')) {
-                    num.append(expression.charAt(i));
-                    i++;
-                }
-                i--;
-
-                float value = Float.parseFloat(num.toString());
-                nodeStack.push(new NumberNode(value));
-
-            } else if (c == '(') {
-                operatorStack.push(new OperatorNode('(', null, null));
-
-            } else if (c == ')') {
-                while (!operatorStack.isEmpty() && operatorStack.peek().getOperator() != '(') {
-                    OperatorNode operatorNode = operatorStack.pop();
-                    ExpressionNode right = nodeStack.pop();
-                    ExpressionNode left = nodeStack.pop();
-                    nodeStack.push(new OperatorNode(operatorNode.getOperator(), left, right));
-                }
-
-                OperatorNode openingParenNode = operatorStack.pop(); // Remove opening parenthesis '('
-
-                ExpressionNode subExpression = nodeStack.pop();
-                openingParenNode.setRightChild(subExpression);
-
-                // Push the updated opening parenthesis node with the sub-expression as its right child back onto the stack
-                operatorStack.push(openingParenNode);
-
-            } else if (c == '+' || c == '-' || c == '*' || c == '/') {
-                while (!operatorStack.isEmpty() && hasPrecedence(c, operatorStack.peek().getOperator())) {
-                    OperatorNode operatorNode = operatorStack.pop();
-                    ExpressionNode right = nodeStack.pop();
-                    ExpressionNode left = nodeStack.pop();
-                    nodeStack.push(new OperatorNode(operatorNode.getOperator(), left, right));
-                }
-                operatorStack.push(new OperatorNode(c, null, null));
-            }
+        public TreeNode(int weight, String str) {
+            this.weight = weight;
+            this.str = str;
         }
-
-        while (!operatorStack.isEmpty()) {
-            OperatorNode operatorNode = operatorStack.pop();
-            ExpressionNode right = nodeStack.pop();
-            ExpressionNode left = nodeStack.pop();
-            nodeStack.push(new OperatorNode(operatorNode.getOperator(), left, right));
-        }
-
-        return nodeStack.isEmpty() ? null : nodeStack.pop();
     }
 
-    private boolean hasPrecedence(char operator1, char operator2) {
-        if ((operator1 == '*' || operator1 == '/') && (operator2 == '+' || operator2 == '-')) {
-            return false;
+    public float calculate(String expression) {
+        if (expression == null || expression.length() == 0) return 0;
+        expression = replaceDoubleMinus(expression);
+        TreeNode root = buildTree(expression);
+        return evaluate(root);
+    }
+
+    private String replaceDoubleMinus(String expression) {
+        return expression.replaceAll("--", "+");
+    }
+
+    private TreeNode buildTree(String expression) {
+        int n = expression.length();
+        char[] chars = expression.trim().toCharArray();
+        Stack<TreeNode> stack = new Stack<>();
+        int base = 0;
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < n; i++) {
+            char c = chars[i];
+
+            if (c == ' ') {
+                continue;
+            } else if (c == '(' || c == ')') {
+                base = getWeight(base, c);
+                continue;
+            } else if (i < n - 1 && Character.isDigit(chars[i]) && Character.isDigit(chars[i + 1])) {
+                sb.append(c);
+                continue;
+            }
+
+            String str = (Character.isDigit(c)) ? extractNumber(chars, sb, i) : Character.toString(c);
+            TreeNode node = new TreeNode(getWeight(base, c), str);
+
+            while (!stack.isEmpty() && node.weight <= stack.peek().weight) {
+                node.left = stack.pop();
+            }
+
+            if (!stack.isEmpty()) {
+                stack.peek().right = node;
+            }
+
+            stack.push(node);
         }
-        return true;
+
+        return extractRoot(stack);
+    }
+
+    private String extractNumber(char[] chars, StringBuilder sb, int i) {
+        sb.append(chars[i]);
+        String str = sb.toString();
+        sb.setLength(0); // Clean up
+        return str;
+    }
+
+    private TreeNode extractRoot(Stack<TreeNode> stack) {
+        TreeNode root = null;
+        while (!stack.isEmpty()) {
+            root = stack.pop();
+        }
+        return root;
+    }
+
+    private float evaluate(TreeNode root) {
+        if (root == null) return 0;
+        float left = evaluate(root.left);
+        float right = evaluate(root.right);
+        float result = 0;
+
+        switch (root.str) {
+            case "+":
+                result = left + right;
+                break;
+            case "-":
+                result = left - right;
+                break;
+            case "*":
+                result = left * right;
+                break;
+            case "/":
+                if (right != 0) {
+                    result = left / right;
+                } else {
+                    throw new ArithmeticException("Division by zero");
+                }
+                break;
+            default:
+                result = Float.parseFloat(root.str);
+        }
+
+        return result;
+    }
+
+    private int getWeight(int base, char c) {
+        if (c == '(') return base + 10;
+        if (c == ')') return base - 10;
+        if (c == '+' || c == '-') return base + 1;
+        if (c == '*' || c == '/') return base + 2;
+        return Integer.MAX_VALUE;
     }
 }
