@@ -1,33 +1,29 @@
 package pl.com.wikann.springboot.utils;
+
 import java.util.Stack;
 
 public class ExpressionTreeBuilder {
 
-    static class TreeNode {
-        int weight;
-        String str;
-        TreeNode left, right;
-
-        public TreeNode(int weight, String str) {
-            this.weight = weight;
-            this.str = str;
-        }
-    }
-
     public float calculate(String expression) {
         if (expression == null || expression.length() == 0) return 0;
-        expression = replaceDoubleMinus(expression);
+        expression = cleanExpression(expression);
         TreeNode root = buildTree(expression);
         return evaluate(root);
     }
 
-    private String replaceDoubleMinus(String expression) {
-        return expression.replaceAll("--", "+");
+    private String cleanExpression(String expression) {
+        // Usuń wszystkie białe znaki przed operacjami
+        expression = expression.replaceAll("\\s+", "");
+
+        // Zamień -- na +
+        expression = expression.replaceAll("--", "+");
+
+        return expression;
     }
 
     private TreeNode buildTree(String expression) {
         int n = expression.length();
-        char[] chars = expression.trim().toCharArray();
+        char[] chars = expression.toCharArray();
         Stack<TreeNode> stack = new Stack<>();
         int base = 0;
         StringBuilder sb = new StringBuilder();
@@ -35,17 +31,15 @@ public class ExpressionTreeBuilder {
         for (int i = 0; i < n; i++) {
             char c = chars[i];
 
-            if (c == ' ') {
-                continue;
-            } else if (c == '(' || c == ')') {
+            if (c == '(' || c == ')') {
                 base = getWeight(base, c);
                 continue;
-            } else if (i < n - 1 && Character.isDigit(chars[i]) && Character.isDigit(chars[i + 1])) {
+            } else if (i < n - 1 && (Character.isDigit(c) || c == '.') && (Character.isDigit(chars[i + 1]) || chars[i + 1] == '.')) {
                 sb.append(c);
                 continue;
             }
 
-            String str = (Character.isDigit(c)) ? extractNumber(chars, sb, i) : Character.toString(c);
+            String str = (Character.isDigit(c) || c == '.') ? extractNumber(chars, sb, i) : Character.toString(c);
             TreeNode node = new TreeNode(getWeight(base, c), str);
 
             while (!stack.isEmpty() && node.weight <= stack.peek().weight) {
@@ -64,6 +58,12 @@ public class ExpressionTreeBuilder {
 
     private String extractNumber(char[] chars, StringBuilder sb, int i) {
         sb.append(chars[i]);
+        int n = chars.length;
+
+        while (i + 1 < n && (Character.isDigit(chars[i + 1]) || chars[i + 1] == '.')) {
+            sb.append(chars[++i]);
+        }
+
         String str = sb.toString();
         sb.setLength(0); // Clean up
         return str;

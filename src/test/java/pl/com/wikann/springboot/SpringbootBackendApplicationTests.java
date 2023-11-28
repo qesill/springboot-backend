@@ -26,5 +26,10 @@ class MathExpressionCalculatorTest {
 
 		// Test dla równania liczbami ujemnymi
 		assertEquals(4.0f, MathExpressionCalculator.calculateResult("2--2"), 0.0001f);
+
+		// Test dla równania liczbami zmiennoprzecinkowymi
+		assertEquals(5.0f, MathExpressionCalculator.calculateResult("2.5+2.5"), 0.0001f);
+		// Test dla równania białymi znakami
+		assertEquals(0.0f, MathExpressionCalculator.calculateResult("1 + 1  -2"), 0.0001f);
 	}
 }
